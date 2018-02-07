@@ -43,8 +43,49 @@ namespace HelpDeskBot.Dialogs
         public async Task DescriptionMessageReceivedAsync(IDialogContext context, IAwaitable<string> argument)
         {
             this.description = await argument;
-            await context.PostAsync($"承知しました。内容は \"{this.description}\" ですね。");
-            context.Done<object>(value: null);
+            var severities = new [] { "high", "normal", "low" };
+
+            PromptDialog.Choice(
+                context: context
+                , resume: this.SeverityMessageRecievedAsync
+                , options: severities
+                , prompt: "この問題の重要度を入力してください"
+            );
+        }
+
+        public async Task SeverityMessageRecievedAsync(IDialogContext context, IAwaitable<string> argument)
+        {
+            this.severity = await argument;
+            const string prompt = "この問題のカテゴリーを以下から選んで入力してください\n\n"
+                + "software, hardware, networking, security, other";
+            PromptDialog.Text(context: context, resume: this.CategoryMessageReceivedAsync, prompt: prompt);
+        }
+
+        private async Task CategoryMessageReceivedAsync(IDialogContext context, IAwaitable<string> result)
+        {
+            this.category = await result;
+            var text = "承知しました。\n\n"
+                + $"重要度: \"{this.severity}\"、カテゴリー: \"{this.category}\" "
+                + "でサポートチケットを発行します。\n\n"
+                + $"詳細: \"{this.description}\" \n\n"
+                + "以上の内容でよろしいでしょうか？";
+
+            PromptDialog.Confirm(context: context, resume: this.IssueConformedMessageReceivedAsync, prompt: text);
+        }
+
+        private async Task IssueConformedMessageReceivedAsync(IDialogContext context, IAwaitable<bool> result)
+        {
+            var confirmed = await result;
+
+            if (confirmed)
+            {
+                await context.PostAsync("サポートチケットを発行しました。");
+            }
+            else
+            {
+                await context.PostAsync("サポートチケットの発行を中止しました。最初からやり直してください。");
+            }
+            context.Done<object>(null);
         }
     }
 }
