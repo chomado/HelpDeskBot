@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using Microsoft.Bot.Builder.Dialogs;
 using Microsoft.Bot.Connector;
 using HelpDeskBot.Util;
+using System.Collections.Generic;
+using AdaptiveCards;
 
 namespace HelpDeskBot.Dialogs
 {
@@ -85,7 +87,16 @@ namespace HelpDeskBot.Dialogs
 
                 if (ticketId != -1)
                 {
-                    await context.PostAsync($"承知しました。チケットNo.{ticketId}でサポートチケットを発行しました。");
+                    var message = context.MakeMessage();
+                    message.Attachments = new List<Attachment>
+                    {
+                        new Attachment
+                        {
+                            ContentType = "application/vnd.microsoft.card.adaptive",
+                            Content = CreateCard(ticketId, this.category, this.severity, this.description)
+                        }
+                    };
+                    await context.PostAsync(message);
                 }
                 else
                 {
@@ -97,6 +108,67 @@ namespace HelpDeskBot.Dialogs
                 await context.PostAsync("サポートチケットの発行を中止しました。最初からやり直してください。");
             }
             context.Done<object>(null);
+        }
+
+        private AdaptiveCard CreateCard(int ticketId, string category, string severity, string description)
+        {
+            var card = new AdaptiveCard();
+
+            var headerBlock = new TextBlock()
+            {
+                Text = $"Tucket #{ticketId}",
+                Weight = TextWeight.Bolder,
+                Size = TextSize.Large,
+                Speak = $"承知しました。チケット No.{ticketId}でサポートチケットを発行しました。担当者からの連絡をお待ちください。",
+            };
+
+            var columnBlock = new ColumnSet()
+            {
+                Separation = SeparationStyle.Strong,
+                Columns = new List<Column>
+                {
+                    new Column
+                    {
+                        Size = "1",
+                        Items = new List<CardElement>
+                        {
+                            new FactSet
+                            {
+                                Facts = new List<AdaptiveCards.Fact>
+                                {
+                                    new AdaptiveCards.Fact(title: "Severity: ", value: severity),
+                                    new AdaptiveCards.Fact(title: "Category: ", value: category),
+                                }
+                            }
+                        },
+                    },
+                    new Column
+                    {
+                        Size = "auto",
+                        Items = new List<CardElement>
+                        {
+                            new Image
+                            {
+                                Url = "https://pbs.twimg.com/profile_images/947463663056650240/pvAbP-BI_400x400.jpg",
+                                Size = ImageSize.Small,
+                                HorizontalAlignment = HorizontalAlignment.Right,
+                            }
+                        }
+                    },
+                },
+            };
+
+            var descriptionBlock = new TextBlock
+            {
+                Text = description,
+                Wrap = true,
+            };
+
+            card.Body.Add(item: headerBlock);
+            card.Body.Add(item: columnBlock);
+            card.Body.Add(item: descriptionBlock);
+
+            return card;
         }
     }
 }
