@@ -15,6 +15,9 @@ namespace HelpDeskBot.Dialogs
         private string severity; // 厳しさ
         private string description;
 
+        private bool isUserSatisfied;
+        private string usersVoice; // ご意見をお聞かせください。
+
         public Task StartAsync(IDialogContext context)
         {
             context.Wait(MessageReceivedAsync);
@@ -27,7 +30,11 @@ namespace HelpDeskBot.Dialogs
             var message = await argument;
             await context.PostAsync("Help Desk Bot です。サポートデスク受付チケットの発行を行います。");
 
-            PromptDialog.Text(context: context, resume: this.DescriptionMessageReceivedAsync, prompt: "どんなことにお困りですか？");
+            PromptDialog.Text(
+                context: context
+                , resume: this.DescriptionMessageReceivedAsync
+                , prompt: "どんなことにお困りですか？"
+            );
         }
 
         private async Task MessageReceivedAsync(IDialogContext context, IAwaitable<object> result)
@@ -94,7 +101,7 @@ namespace HelpDeskBot.Dialogs
                         {
                             ContentType = "application/vnd.microsoft.card.adaptive",
                             Content = CreateCard(ticketId, this.category, this.severity, this.description)
-                        }
+                        },
                     };
                     await context.PostAsync(message);
                 }
@@ -107,8 +114,31 @@ namespace HelpDeskBot.Dialogs
             {
                 await context.PostAsync("サポートチケットの発行を中止しました。最初からやり直してください。");
             }
-            context.Done<object>(null);
+            PromptDialog.Confirm(context, this.HearingUsersVoice, "この bot の応対にご満足いただけましたか？？");
         }
+        private async Task HearingUsersVoice(IDialogContext context, IAwaitable<bool> isUserSatisfied)
+        {
+            this.isUserSatisfied = await isUserSatisfied;
+
+            var response = this.isUserSatisfied
+                ? "ご満足いただけたようで嬉しいです。"
+                : "至らずに申し訳ございません。精進します。";
+
+            PromptDialog.Text(
+                context: context
+                , resume: this.HeardUsersVoice
+                , prompt: response + "\n\nご意見をお聞かせください。"
+            );
+        }
+        public async Task HeardUsersVoice(IDialogContext context, IAwaitable<string> usersVoice)
+        {
+            this.usersVoice = await usersVoice;
+            // TODO: ここで result (はい/いいえ)とご意見を送る処理
+
+            PromptDialog.Text(context, null, $"ご意見ありがとうございました。\n\n頂いたメッセージ: {this.usersVoice}");
+        }
+
+
 
         private AdaptiveCard CreateCard(int ticketId, string category, string severity, string description)
         {
