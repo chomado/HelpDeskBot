@@ -15,7 +15,7 @@ namespace HelpDeskBot.Dialogs
         private string severity; // 厳しさ
         private string description;
 
-        private bool isUserSatisfied;
+        private int usersSatisfaction;
         private string usersVoice; // ご意見をお聞かせください。
 
         public Task StartAsync(IDialogContext context)
@@ -114,15 +114,28 @@ namespace HelpDeskBot.Dialogs
             {
                 await context.PostAsync("サポートチケットの発行を中止しました。最初からやり直してください。");
             }
-            PromptDialog.Confirm(context, this.HearingUsersVoice, "この bot の応対にご満足いただけましたか？？");
+            PromptDialog.Choice(context, this.HearingUsersVoice, new[] { "はい", "いいえ" }, "この bot の応対にご満足いただけましたか？？");
         }
-        private async Task HearingUsersVoice(IDialogContext context, IAwaitable<bool> isUserSatisfied)
+        private async Task HearingUsersVoice(IDialogContext context, IAwaitable<string> result)
         {
-            this.isUserSatisfied = await isUserSatisfied;
+            var answer = await result;
+            var response = "";
 
-            var response = this.isUserSatisfied
-                ? "ご満足いただけたようで嬉しいです。"
-                : "至らずに申し訳ございません。精進します。";
+            switch (answer)
+            {
+                case "はい":
+                    this.usersSatisfaction = 2;
+                    response = "ご満足いただけたようで嬉しいです。";
+                    break;
+                case "いいえ":
+                    this.usersSatisfaction = 1;
+                    response = "至らずに申し訳ございません。精進します。";
+                    break;
+                default:
+                    this.usersSatisfaction = 0;
+                    break;
+            }
+
 
             PromptDialog.Text(
                 context: context
