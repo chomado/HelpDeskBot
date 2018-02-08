@@ -136,7 +136,6 @@ namespace HelpDeskBot.Dialogs
                     break;
             }
 
-
             PromptDialog.Text(
                 context: context
                 , resume: this.HeardUsersVoice
@@ -146,11 +145,12 @@ namespace HelpDeskBot.Dialogs
         public async Task HeardUsersVoice(IDialogContext context, IAwaitable<string> usersVoice)
         {
             this.usersVoice = await usersVoice;
-            // TODO: ここで result (はい/いいえ)とご意見を送る処理
 
+            // result (はい/いいえ)とご意見を送る処理
+            var data = new Util.FeedbackEntity(rate: this.usersSatisfaction, comment: this.usersVoice);
+            await data.SendFeedbackToAzure();
             PromptDialog.Text(context, null, $"ご意見ありがとうございました。\n\n頂いたメッセージ: {this.usersVoice}");
         }
-
 
 
         private AdaptiveCard CreateCard(int ticketId, string category, string severity, string description)
