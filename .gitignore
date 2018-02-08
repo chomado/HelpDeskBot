@@ -260,3 +260,4 @@ paket-files/
 __pycache__/
 *.pyc
 HelpDeskBot/Keys/LuisKeys.cs
+HelpDeskBot/Web.config
