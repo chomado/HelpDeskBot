@@ -41,11 +41,10 @@ namespace HelpDeskBot.Util
             // Create a new customer entity.
             FeedbackEntity testData = new FeedbackEntity(rate: this.Rate, comment: this.Comment);
 
-            // Create the TableOperation object that inserts the customer entity.
-            TableOperation insertOperation = TableOperation.Insert(testData);
-
+            //TableOperation insertOperation = TableOperation.Insert(testData);
+            TableOperation insertOrReplaceOperation = TableOperation.InsertOrReplace(testData);
             // Execute the insert operation.
-            await table.ExecuteAsync(insertOperation);
+            await table.ExecuteAsync(insertOrReplaceOperation);
         }
     }
 }
